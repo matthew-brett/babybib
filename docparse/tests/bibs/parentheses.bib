@@ -1,0 +1,13 @@
+Testing parentheses; the first comment does not comment out the article
+@comment(
+@article{Me2010,author="me"}
+)
+This string works as expected
+@string(astring = "one string")
+This string raises an error and appears as ``anstring`` below (not replaced)
+@string{anstring = (two string)}
+@article{Me2009,author=astring,title=anstring}
+We can include parantheses in strings as literals
+@article(Me2008,
+        author="Me ) Again",
+        title={Stuff from me})
