@@ -1,0 +1,17 @@
+We can't backslash a quote - the name truncates to Matthew \ and gives an error
+@article{Me2010,
+    author = "Matthew \"Brett",
+}
+But we can curly it
+@article{Me2011,
+    author = "Matthew {"}Brett",
+}
+Can nest quotes in curlies, they are just literals in that case
+@article{Me2012,
+    author = {Matthew "Brett}
+}
+Literal curlies are hard - just one literal curly doesn't work - we need open
+and closing curlies as here
+@article{Me2013,
+    author = "Matthew \{ Brett \}"
+}
