@@ -1,0 +1,17 @@
+#######
+BabyBib
+#######
+
+A tiny bibliography parser at very early stages of evolution.
+
+I was inspired to do this as part of creating a sphinx extension for bibtex.
+
+My first attempts used bibstuff_ . It began to look as if it would be easier to
+implement the bits of bibstuff that I needed.
+
+There are some links to BibTeX format descriptions and software in the
+``doc/links_names.inc`` file.
+
+.. _bibstuff: http://pricklysoft.org/software/bibstuff.html
+
+.. vim: ft=rst
