@@ -4,7 +4,8 @@ DEBUG = True
 
 import re
 
-from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward)
+from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward,
+                       restOfLine)
 
 # Our character definitions
 chars_no_curly = Regex(r"[^{}]+")
@@ -55,7 +56,7 @@ preamble = ((at + preamble_id + lcurly + name + equals + field_value + rcurly) |
          (at + preamble_id + lparen + name + equals + field_value + rparen))
 
 # Start non-terminal
-definitions = comment | preamble | macro | entry
+definitions = comment | preamble | macro | entry | restOfLine
 bibfile = ZeroOrMore(definitions)
 
 
