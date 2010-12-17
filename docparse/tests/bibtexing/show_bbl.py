@@ -12,20 +12,20 @@ from os.path import dirname, join as pjoin, abspath
 import sys
 import shutil
 import tempfile
-from subprocess import check_call
+import subprocess
 from optparse import OptionParser
 
 _my_path = dirname(__file__)
 
 def mycall(cmd):
-    return check_call(cmd, shell=True)
+    return subprocess.call(cmd, shell=True)
 
 
 def main():
     parser = OptionParser(usage=usage)
     parser.add_option("-s", "--style",
-                      help="format entries using STYLE (default is custom "
-                      "'names.bst' style",
+                      help="format entries using STYLE (default is export)",
+                      default='export',
                       metavar="STYLE")
     parser.add_option("-c", "--in-cwd",
                       action='store_true',
@@ -35,7 +35,7 @@ def main():
     if len(bibfiles) == 0:
         parser.print_help()
         sys.exit(0)
-    if options.style is None:
+    if options.style == 'names': # custom style to output names only
         options.style = abspath(pjoin(_my_path, 'names.bst'))
     if not options.in_cwd:
         if options.style.endswith('.bst'):
