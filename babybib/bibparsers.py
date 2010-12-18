@@ -5,7 +5,7 @@ DEBUG = True
 import re
 
 from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward,
-                       restOfLine)
+                       Literal, SkipTo, lineStart)
 
 # Our character definitions
 chars_no_curly = Regex(r"[^{}]+")
@@ -20,6 +20,7 @@ quote = Suppress('"')
 comma = Suppress(',')
 at = Suppress('@')
 equals = Suppress('=')
+hash = Literal('#')
 
 # Define parser for strings (the hard bit)
 # Curly string is some stuff without curlies, or nested curly sequences
@@ -34,29 +35,38 @@ quoted_string = quote + ZeroOrMore(quoted_item) + quote
 # Now we define the entry contents.  The following list of characters is from
 # the btparse documentation
 name = Regex(r'[^\s"#%\'(),={}]+')
-field_value = quoted_string | curly_string | name
+string = quoted_string | curly_string | name
+# There can be hash concatenation
+field_value = string + ZeroOrMore(hash + string)
 field_def = name + equals + field_value
 entry_contents = Group(ZeroOrMore(field_def + comma) + Optional(field_def))
 
+# Convenience for our two types of brackets
+def bracketed(expr):
+    return (lparen + expr + rparen) | (lcurly + expr + rcurly)
+
 # Entry is surrounded either by parentheses or curlies
-entry = ((at + name + lcurly + name + comma + entry_contents + rcurly) |
-         (at + name + lparen + name + comma + entry_contents + rparen))
+entry = at + name + bracketed(comma + entry_contents)
 
 # Comment just comments out to end of line
 comment = at + Regex('comment.*', re.IGNORECASE)
 
+# where to go if there's an error during processing
+error_start = Suppress(SkipTo(lineStart + '@'))
+
 # Macros
-string_id = Regex('string', re.IGNORECASE)
-macro = ((at + string_id + lcurly + name + equals + field_value + rcurly) |
-         (at + string_id + lparen + name + equals + field_value + rparen))
+macro_id = Regex('string', re.IGNORECASE)
+macro = at + macro_id + bracketed(name + equals + field_value) | error_start
 
 # Preamble
 preamble_id = Regex('preamble', re.IGNORECASE)
-preamble = ((at + preamble_id + lcurly + name + equals + field_value + rcurly) |
-         (at + preamble_id + lparen + name + equals + field_value + rparen))
+preamble = at + preamble_id + bracketed(name + equals + field_value) | error_start
 
-# Start non-terminal
-definitions = comment | preamble | macro | entry | restOfLine
+# Where to go next
+normal_start = Suppress(SkipTo('@'))
+
+# Start terminal symbol
+definitions = comment | preamble | macro | entry | normal_start
 bibfile = ZeroOrMore(definitions)
 
 

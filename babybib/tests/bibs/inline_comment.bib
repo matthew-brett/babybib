@@ -1,8 +1,13 @@
 "some text" causes an error like this
 ``You're missing a field name---line 6 of file bibs/inline_comment.bib``
-but bibtex nonetheless finds the article and author (not the title), and the
-Me2009 article
+for both of the % some text occurences below; in both cases the parser keeps
+what it has up til that point and skips, so that it correctly gets the last
+entry.
 @article{Me2010,
     author="Brett, Matthew", % some text
     title="An article"}
-@article{Me2009,author={Nom de Plume, My}, title="A short story"}
+@article{Me2011,
+    author="Brett-like, Matthew",
+% some text
+    title="Another article"}
+@article{Me2012,author={Nom de Plume, My}, title="A short story"}

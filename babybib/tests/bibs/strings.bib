@@ -1,0 +1,24 @@
+Strings can only be used after they are defined (gives string name "aname" is
+undefined)
+@article(Me2009, author=aname)
+
+From section 9 in Beebe (1993)
+Strings cannot be empty (raises error, but carries on processing)
+@string{}
+
+Left hand side strings can occur on the right hand side
+@string{aname = "A Name"}
+@string{another_name = aname}
+
+At signs cannot occur in comments
+@comment{an @article}
+
+An entry need not have a citation key.  If it doesn't have a comma, the next
+entry will be interpreted as the key, even if it does not itself have a comma.
+@article{,
+    author="me"
+}
+
+Test article to show the effect of lhs rhs string
+@article(Me2010, author=another_name)
+
