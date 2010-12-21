@@ -1,7 +1,7 @@
 "some text" causes an error like this
 ``You're missing a field name---line 6 of file bibs/inline_comment.bib``
-for both of the % some text occurences below; in both cases the parser keeps
-what it has up til that point and skips, so that it correctly gets the last
+for all 3 of the % some text occurences below; in each case the parser keeps
+what it has up till that point and skips, so that it correctly gets the last
 entry.
 @article{Me2010,
     author="Brett, Matthew", % some text
@@ -10,4 +10,7 @@ entry.
     author="Brett-like, Matthew",
 % some text
     title="Another article"}
-@article{Me2012,author={Nom de Plume, My}, title="A short story"}
+@article{Me2012, % some text
+    author="Real Brett"}
+This one correctly read
+@article{Me2013,author={Nom de Plume, My}, title="A short story"}

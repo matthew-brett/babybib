@@ -1,0 +1,21 @@
+From:
+http://artis.imag.fr/~Xavier.Decoret/resources/xdkbibtex/bibtex_summary.html#preamble
+
+@preamble {"This bibliography was generated on \today"}
+@preamble ("This bibliography was generated on \today")
+
+Such declarations can be placed anywhere in the document outside entries. If
+several of them appears in different places, they are concatenated in the order
+of apparition.
+
+The string definition can be used within the preamble so you can have files
+such as :
+
+@String {maintainer = "Xavier D\'ecoret"}
+
+@preamble { "Maintained by " # maintainer }
+
+Strings have the usual rules
+
+@preamble { {can also be {nested {deeply }}}}
+@preamble { 1999 }

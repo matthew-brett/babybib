@@ -19,6 +19,20 @@ entry will be interpreted as the key, even if it does not itself have a comma.
     author="me"
 }
 
-Test article to show the effect of lhs rhs string
-@article(Me2010, author=another_name)
+Concatenation works as expected
+@article{Me2011, author=aname # "a string"}
 
+Months are defined by the style, but are defined. With the ``export`` style,
+these result in ``export-jan`` and ``export-feb`` for example.
+@article{something,
+    author=jan,
+    title=feb}
+
+String names cannot start with a number (you are missing a string name error)
+@string{2thou='two thousand"}
+
+They can contain numbers
+@string{t2="two thousand"}
+
+Test article to show the effect of lhs rhs string and t2
+@article{Me2010, author=another_name, title=t2}

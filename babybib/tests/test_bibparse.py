@@ -6,6 +6,21 @@ from .. import bibparsers as bp
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 
 
+def test_names():
+    # check names
+    citation_key, field_name, macro_name = (
+        bp.citation_key, bp.field_name, bp.macro_name)
+    # key names can start with a digit
+    assert_equal()
+    assert_raises(ParseException, bp.name.parseString, '## ')
+    name_checker = OneOrMore(bp.field_name)
+    assert_equal(name_checker.parseString('a name or two').asList(),
+                 ['a','name','or','two'])
+    # check that names also work for strings
+    assert_equal(bp.string.parseString('someascii')[0], 'someascii')
+    assert_raises(ParseException, bp.string.parseString, '%#= validstring')
+
+
 def test_parse_string():
     # test string building blocks
     assert_equal(bp.chars_no_quotecurly.parseString('x')[0], 'x')
@@ -37,7 +52,7 @@ def test_parse_string():
                  ['a','name','or','two'])
     # check that names also work for strings
     assert_equal(bp.string.parseString('someascii')[0], 'someascii')
-    assert_raises(ParseException, bp.string.parseString, '%#=')
+    assert_raises(ParseException, bp.string.parseString, '%#= validstring')
 
 
 def test_parse_field():
