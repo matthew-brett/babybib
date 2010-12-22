@@ -1,0 +1,13 @@
+Tests for what numbers can contain
+Integers are OK
+@article{Me2010,
+    year=3}
+Point without dot gives ``string name ".3" is undefined``
+@article{Me2011,
+    year=.3,
+    author="Me"}
+Point with dot gives a full error, 0 as the year, and the rest of the entry
+skipped
+@article{Me2012,
+    year=0.3,
+    author="Me"}
