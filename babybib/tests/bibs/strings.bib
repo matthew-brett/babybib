@@ -24,9 +24,18 @@ Concatenation works as expected
 
 Months are defined by the style, but are defined. With the ``export`` style,
 these result in ``export-jan`` and ``export-feb`` for example.
-@article{something,
+@article{Me2012,
     author=jan,
     title=feb}
+
+Defining the same string several places in a file leads to different
+definitions in the same file
+@string{aname = "A name later"}
+@article{Me2013, author=aname}
+
+Redefining e.g jan leads to it being substituted in export
+@string{jan = "A cold month"}
+@article{Me2014, author=jan}
 
 String names cannot start with a number (you are missing a string name error)
 @string{2thou='two thousand"}
