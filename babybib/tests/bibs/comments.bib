@@ -1,0 +1,24 @@
+Both the articles register despite the comment block
+@Comment{
+@article{Me2010, author="Brett, Matthew", title="An article"}
+@article{Me2009,author={Nom de Plume, My}, title="A short story"}
+}
+These all work OK without errors
+@Comment{and more stuff}
+@Comment and more stuff
+@Comment(and more stuff)
+@Comment	and more stuff
+@Comment{and more stuff
+@Comment(and more stuff
+
+These all generate errors of parsing
+@comment#more stuff
+@comment2more stuff
+@Commentand more stuff
+@Comment+more stuff
+@Comment[and more stuff]
+@Comment:and more stuff
+@Comment"and more stuff"
+
+Last article to show we can get here
+@article{Me2011, author="Me really"}

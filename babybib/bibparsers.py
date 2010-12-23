@@ -29,7 +29,8 @@ Simplified BSD license
 import re
 
 from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward,
-                       Literal, SkipTo, lineStart, Word, nums)
+                       SkipTo, lineStart, Word, nums, CaselessLiteral,
+                       restOfLine)
 
 
 # Our character definitions
@@ -82,7 +83,8 @@ error_start = Suppress(SkipTo(lineStart + '@'))
 normal_start = Suppress(SkipTo('@'))
 
 # Comment comments out to end of line
-comment = AT + Regex('comment.*', re.IGNORECASE)
+comment = (AT + Suppress(CaselessLiteral('comment')) +
+           Regex("[\s{(].*").leaveWhitespace()).setResultsName('comment')
 
 # Preamble start
 preamble_id = Regex('preamble', re.IGNORECASE)

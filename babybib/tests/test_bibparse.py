@@ -70,13 +70,46 @@ def test_parse_string():
     # check macro def in string
     assert_equal(bp.string.parseString('someascii')[0], Macro('someascii'))
     assert_raises(ParseException, bp.string.parseString, '%#= validstring')
+    # check number in string
+    assert_equal(bp.string.parseString('1994')[0], '1994')
 
 
 def test_parse_field():
     # test field value - hashes included
     fv = bp.field_value
+    # Macro
     assert_equal(fv.parseString('aname')[0], Macro('aname'))
+    # String and macro
     assert_equal(fv.parseString('aname # "some string"').asList(),
                  [Macro('aname'), 'some string'])
+    # Nested string
     assert_equal(fv.parseString('aname # {some {string}}').asList(),
                  [Macro('aname'), 'some ', ['string']])
+    # String and number
+    assert_equal(fv.parseString('"a string" # 1994').asList(),
+                 ['a string', '1994'])
+    # String and number and macro
+    assert_equal(fv.parseString('"a string" # 1994 # a_macro').asList(),
+                 ['a string', '1994', Macro('a_macro')])
+
+
+def test_comments():
+    res = bp.comment.parseString('@Comment{about something}')
+    assert_equal(res.asList(), ['{about something}'])
+    assert_equal(res.comment[0], '{about something}')
+    assert_equal(bp.comment.parseString('@COMMENT{about something')[0],
+                 '{about something')
+    assert_equal(bp.comment.parseString('@comment(about something')[0],
+                 '(about something')
+    assert_equal(bp.comment.parseString('@comment about something')[0],
+                 ' about something')
+    assert_raises(ParseException, bp.comment.parseString,
+                  '@commentabout something')
+    assert_raises(ParseException, bp.comment.parseString,
+                  '@comment+about something')
+    assert_raises(ParseException, bp.comment.parseString,
+                  '@comment"about something')
+
+
+def test_preamble():
+    pass
