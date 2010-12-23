@@ -1,11 +1,15 @@
 """ Test for bibparse grammar """
 
+import os
+from os.path import join as pjoin, dirname
+
 from pyparsing import ParseException, OneOrMore
 from .. import bibparsers as bp
 from ..bibparsers import Macro
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 
+BIB_PATH = pjoin(dirname(__file__), 'bibs')
 
 def test_names():
     # check various types of names
@@ -128,3 +132,41 @@ def test_macro():
     assert_equal(res.string[0], 'about something')
     assert_equal(bp.macro.parseString('@string{aname = {about something}}')[0],
                  'about something')
+
+
+def test_entry():
+    txt = """@some_entry{akey, aname = "about something",
+    another={something else}}"""
+    res = bp.entry.parseString(txt)
+    assert_equal(res.asList(), ['about something'])
+
+
+def test_bibfile():
+    txt = """@some_entry{akey, aname = "about something",
+    another={something else}}"""
+    res = bp.bibfile.parseString(txt)
+    assert_equal(res.asList(), ['about something'])
+
+
+def test_bib1():
+    txt = """ @ARTICLE{Brett2002marsbar,
+  author = {Matthew Brett and Jean-Luc Anton and Romain Valabregue and Jean-Baptise
+	Poline},
+  title = {{Region of interest analysis using an SPM toolbox}},
+  journal = {Neuroimage},
+  year = {2002},
+  volume = {16},
+  pages = {1140--1141},
+  number = {2}
+}"""
+    res = bp.bibfile.parseString(txt)
+    res = list(bp.definitions.scanString(txt))
+    print res
+    comment_txt = """% a comment
+%another comment
+""" + txt
+    res = list(bp.definitions.scanString(comment_txt))
+    print res
+    txt = open(pjoin(BIB_PATH, 'bib1.bib'), 'rt').read()
+    res = list(bp.definitions.scanString(txt))
+    print res

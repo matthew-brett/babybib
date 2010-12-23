@@ -30,7 +30,7 @@ import re
 
 from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward,
                        SkipTo, lineStart, Word, nums, CaselessLiteral,
-                       restOfLine)
+                       restOfLine, Dict)
 
 
 # Our character definitions
@@ -86,12 +86,6 @@ normal_start = Suppress(SkipTo('@'))
 comment = (AT + Suppress(CaselessLiteral('comment')) +
            Regex("[\s{(].*").leaveWhitespace()).setResultsName('comment')
 
-# Preamble start
-preamble_id = Regex('preamble', re.IGNORECASE)
-
-# Macro (string) start
-macro_id = Regex('string', re.IGNORECASE)
-
 # Id for macro def
 class Macro(object):
     def __init__(self, name):
@@ -115,31 +109,32 @@ string = (number | macro_ref | quoted_string |
 
 # There can be hash concatenation
 field_value = string + ZeroOrMore(HASH + string)
-field_def = field_name + EQUALS + field_value
-entry_contents = Group(
-    ZeroOrMore(field_def + COMMA) + Optional(field_def))
+field_def = Group(field_name + EQUALS + field_value)
+entry_contents = Dict(ZeroOrMore(field_def + COMMA) + Optional(field_def))
 
 # Entry is surrounded either by parentheses or curlies
 entry = (AT + entry_type +
-         bracketed(cite_key + COMMA + entry_contents) |
-         error_start)
+         bracketed(cite_key + COMMA + entry_contents))
 
 # Preamble is a macro-like thing with no name
 preamble = (AT + Suppress(CaselessLiteral('preamble')) +
             bracketed(field_value)).setResultsName('preamble')
 
 # Macros (aka strings)
+macro_contents = macro_def + EQUALS + field_value
 macro = (AT + Suppress(CaselessLiteral('string')) +
-         bracketed(macro_def + EQUALS + field_value)).setResultsName(
+         bracketed(macro_contents)).setResultsName(
              'string')
+
+# Everything else is an implicit comment
+implicit_comment = Suppress(restOfLine)
 
 # entries are last in the list (other than the fallback) because they have
 # arbitrary start patterns that would match comments, preamble or macro
 definitions = (comment |
                preamble |
                macro |
-               entry |
-               normal_start)
+               entry )
 
 # Start symbol
 bibfile = ZeroOrMore(definitions)
