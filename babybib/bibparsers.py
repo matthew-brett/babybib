@@ -125,13 +125,13 @@ entry = (AT + entry_type +
          error_start)
 
 # Preamble is a macro-like thing with no name
-preamble = (AT + preamble_id +
-            bracketed(field_value) | error_start)
+preamble = (AT + Suppress(CaselessLiteral('preamble')) +
+            bracketed(field_value)).setResultsName('preamble')
 
 # Macros (aka strings)
-macro = (AT + macro_id +
-         bracketed(macro_def + EQUALS + field_value)
-         | error_start)
+macro = (AT + Suppress(CaselessLiteral('string')) +
+         bracketed(macro_def + EQUALS + field_value)).setResultsName(
+             'string')
 
 # entries are last in the list (other than the fallback) because they have
 # arbitrary start patterns that would match comments, preamble or macro

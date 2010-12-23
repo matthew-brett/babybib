@@ -112,4 +112,19 @@ def test_comments():
 
 
 def test_preamble():
-    pass
+    res = bp.preamble.parseString('@preamble{"about something"}')
+    assert_equal(res.asList(), ['about something'])
+    assert_equal(res.preamble[0], 'about something')
+    assert_equal(bp.preamble.parseString('@PREamble{{about something}}')[0],
+                 'about something')
+    assert_equal(bp.preamble.parseString("""@PREamble{
+        {about something}
+    }""")[0], 'about something')
+
+
+def test_macro():
+    res = bp.macro.parseString('@string{aname = "about something"}')
+    assert_equal(res.asList(), ['about something'])
+    assert_equal(res.string[0], 'about something')
+    assert_equal(bp.macro.parseString('@string{aname = {about something}}')[0],
+                 'about something')
