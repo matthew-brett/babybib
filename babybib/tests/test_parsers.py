@@ -48,13 +48,13 @@ def test_numbers():
 
 def test_parse_string():
     # test string building blocks
-    assert_equal(bp.CHARS_NO_QUOTECURLY.parseString('x')[0], 'x')
-    assert_equal(bp.CHARS_NO_QUOTECURLY.parseString("a string")[0], 'a string')
-    assert_equal(bp.CHARS_NO_QUOTECURLY.parseString('a "string')[0], 'a ')
-    assert_equal(bp.CHARS_NO_CURLY.parseString('x')[0], 'x')
-    assert_equal(bp.CHARS_NO_CURLY.parseString("a string")[0], 'a string')
-    assert_equal(bp.CHARS_NO_CURLY.parseString('a {string')[0], 'a ')
-    assert_equal(bp.CHARS_NO_CURLY.parseString('a }string')[0], 'a ')
+    assert_equal(bp.chars_no_quotecurly.parseString('x')[0], 'x')
+    assert_equal(bp.chars_no_quotecurly.parseString("a string")[0], 'a string')
+    assert_equal(bp.chars_no_quotecurly.parseString('a "string')[0], 'a ')
+    assert_equal(bp.chars_no_curly.parseString('x')[0], 'x')
+    assert_equal(bp.chars_no_curly.parseString("a string")[0], 'a string')
+    assert_equal(bp.chars_no_curly.parseString('a {string')[0], 'a ')
+    assert_equal(bp.chars_no_curly.parseString('a }string')[0], 'a ')
     # test more general strings together
     for obj in (bp.curly_string, bp.string, bp.field_value):
         assert_equal(obj.parseString('{}').asList(), [])
@@ -82,6 +82,7 @@ def test_parse_field():
     fv = bp.field_value
     # Macro
     assert_equal(fv.parseString('aname')[0], Macro('aname'))
+    assert_equal(fv.parseString('ANAME')[0], Macro('aname'))
     # String and macro
     assert_equal(fv.parseString('aname # "some string"').asList(),
                  [Macro('aname'), 'some string'])
@@ -129,7 +130,7 @@ def test_preamble():
 
 
 def test_macro():
-    res = bp.macro.parseString('@string{aname = "about something"}')
+    res = bp.macro.parseString('@string{ANAME = "about something"}')
     assert_equal(res.asList(), ['string', 'aname', 'about something'])
     assert_equal(
         bp.macro.parseString('@string{aname = {about something}}').asList(),
@@ -138,6 +139,13 @@ def test_macro():
 
 def test_entry():
     txt = """@some_entry{akey, aname = "about something",
+    another={something else}}"""
+    res = bp.entry.parseString(txt)
+    assert_equal(res.asList(),
+                 ['some_entry', 'akey',
+                  ['aname', 'about something'], ['another', 'something else']])
+    # Case conversion
+    txt = """@SOME_ENTRY{akey, ANAME = "about something",
     another={something else}}"""
     res = bp.entry.parseString(txt)
     assert_equal(res.asList(),

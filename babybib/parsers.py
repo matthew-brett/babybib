@@ -7,10 +7,10 @@ To my knowledge there is no formal description of the syntax that BibTeX itself
 uses when interpreting a ``.bib`` file.  The parser here tries to do the same
 thing as BibTeX, roughly, rather than extend or formalize BibTeX grammar.  The
 behavior of the parser is the result of reading what other people have written
-or done, and experimentation with BibTeX.  The experiments used test BibTeX
-files that you may be able to fine in the ``babybib/tests/bibs`` directory.
-Reading included some extremely well-documented prior art, such as `Nelson
-Beeb's bibliography tools`_ and Greg Ward's btparse_.
+or done, and experiments with BibTeX.  The small BibTeX test files should be in
+the ``babybib/tests/bibs`` directory.  Reading included some extremely
+well-documented prior art, such as `Nelson Beeb's bibliography tools`_ and Greg
+Ward's btparse_.
 
 Nelson Beebe proposed a formal syntax for BibTeX files for his BibTex programs
 including bibparse.  His grammar is deliberately not quite the same as the rules
@@ -29,14 +29,10 @@ Simplified BSD license
 """
 
 from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward,
-                       SkipTo, Word, nums, CaselessLiteral, Dict)
+                       SkipTo, CaselessLiteral, Dict)
 
 
-# Our character definitions
-CHARS_NO_CURLY = Regex(r"[^{}]+")
-CHARS_NO_CURLY.leaveWhitespace()
-CHARS_NO_QUOTECURLY = Regex(r'[^"{}]+')
-CHARS_NO_QUOTECURLY.leaveWhitespace()
+# Character literals
 LCURLY = Suppress('{')
 RCURLY = Suppress('}')
 LPAREN = Suppress('(')
@@ -54,17 +50,21 @@ def bracketed(expr):
 
 
 # Define parser components for strings (the hard bit)
+chars_no_curly = Regex(r"[^{}]+")
+chars_no_curly.leaveWhitespace()
+chars_no_quotecurly = Regex(r'[^"{}]+')
+chars_no_quotecurly.leaveWhitespace()
 # Curly string is some stuff without curlies, or nested curly sequences
 curly_string = Forward()
-curly_item = Group(curly_string) | CHARS_NO_CURLY
+curly_item = Group(curly_string) | chars_no_curly
 curly_string << LCURLY + ZeroOrMore(curly_item) + RCURLY
 # quoted string is either just stuff within quotes, or stuff within quotes, within
 # which there is nested curliness
-quoted_item = Group(curly_string) | CHARS_NO_QUOTECURLY
+quoted_item = Group(curly_string) | chars_no_quotecurly
 quoted_string = QUOTE + ZeroOrMore(quoted_item) + QUOTE
 
 # Numbers can just be numbers. Only integers though.
-number = Word(nums)
+number = Regex('[0-9]+')
 
 # Basis characters (by exclusion) for variable / field names.  The following
 # list of characters is from the btparse documentation
@@ -91,11 +91,13 @@ class Macro(object):
         return self.name != other.name
 
 # The name types with their digiteyness
-macro_def = not_digname.copy()
-macro_ref = not_digname.copy().setParseAction(lambda s,l,t : Macro(t[0]))
-field_name = not_digname.copy()
+not_dig_lower = not_digname.copy().setParseAction(
+    lambda t: t[0].lower())
+macro_def = not_dig_lower.copy()
+macro_ref = not_dig_lower.copy().setParseAction(lambda t : Macro(t[0].lower()))
+field_name = not_dig_lower.copy()
 # Spaces in names mean they cannot clash with field names
-entry_type = not_digname.setResultsName('entry type')
+entry_type = not_dig_lower.setResultsName('entry type')
 cite_key = any_name.setResultsName('cite key')
 # Number has to be before macro name
 string = (number | macro_ref | quoted_string |
