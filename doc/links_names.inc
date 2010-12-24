@@ -12,8 +12,10 @@
 .. _bibparse grammar: http://www.math.utah.edu/~beebe/software/bibparse/bibparse.html#HDR.5
 .. _bibclean grammar description: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.101.8005&rep=rep1&type=pdf
 
+.. _bibtex format reference: http://ctan.sqsol.co.uk/info/tex-references/html/bibtex-bib-files.html
 .. _bibtex.org format description: http://www.bibtex.org/Format
 .. _Dana Jacobsen's bibtex format overview: http://www.fb10.uni-bremen.de/anglistik/langpro/bibliographies/jacobsen-bibtex.html
 .. _Xavier Decoret's bibtex summary: http://artis.imag.fr/~Xavier.Decoret/resources/xdkbibtex/bibtex_summary.html
 
+.. _pybtex: http://pybtex.sourceforge.net/
 .. _bibstuff: http://pricklysoft.org/software/bibstuff.html
