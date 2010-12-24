@@ -1,11 +1,10 @@
 """ Test for bibparse grammar """
 
-import os
 from os.path import join as pjoin, dirname
 
-from pyparsing import ParseException, OneOrMore
-from .. import bibparsers as bp
-from ..bibparsers import Macro
+from pyparsing import ParseException
+from .. import parsers as bp
+from ..parsers import Macro
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 
@@ -99,14 +98,16 @@ def test_parse_field():
 
 def test_comments():
     res = bp.comment.parseString('@Comment{about something}')
-    assert_equal(res.asList(), ['{about something}'])
-    assert_equal(res.comment[0], '{about something}')
-    assert_equal(bp.comment.parseString('@COMMENT{about something')[0],
-                 '{about something')
-    assert_equal(bp.comment.parseString('@comment(about something')[0],
-                 '(about something')
-    assert_equal(bp.comment.parseString('@comment about something')[0],
-                 ' about something')
+    assert_equal(res.asList(), ['comment', '{about something}'])
+    assert_equal(
+        bp.comment.parseString('@COMMENT{about something').asList(),
+        ['comment', '{about something'])
+    assert_equal(
+        bp.comment.parseString('@comment(about something').asList(),
+        ['comment', '(about something'])
+    assert_equal(
+        bp.comment.parseString('@COMment about something').asList(),
+        ['comment', ' about something'])
     assert_raises(ParseException, bp.comment.parseString,
                   '@commentabout something')
     assert_raises(ParseException, bp.comment.parseString,
@@ -117,39 +118,50 @@ def test_comments():
 
 def test_preamble():
     res = bp.preamble.parseString('@preamble{"about something"}')
-    assert_equal(res.asList(), ['about something'])
-    assert_equal(res.preamble[0], 'about something')
-    assert_equal(bp.preamble.parseString('@PREamble{{about something}}')[0],
-                 'about something')
+    assert_equal(res.asList(), ['preamble', 'about something'])
+    assert_equal(bp.preamble.parseString(
+        '@PREamble{{about something}}').asList(),
+        ['preamble', 'about something'])
     assert_equal(bp.preamble.parseString("""@PREamble{
         {about something}
-    }""")[0], 'about something')
+    }""").asList(),
+        ['preamble', 'about something'])
 
 
 def test_macro():
     res = bp.macro.parseString('@string{aname = "about something"}')
-    assert_equal(res.asList(), ['about something'])
-    assert_equal(res.string[0], 'about something')
-    assert_equal(bp.macro.parseString('@string{aname = {about something}}')[0],
-                 'about something')
+    assert_equal(res.asList(), ['string', 'aname', 'about something'])
+    assert_equal(
+        bp.macro.parseString('@string{aname = {about something}}').asList(),
+        ['string', 'aname', 'about something'])
 
 
 def test_entry():
     txt = """@some_entry{akey, aname = "about something",
     another={something else}}"""
     res = bp.entry.parseString(txt)
-    assert_equal(res.asList(), ['about something'])
+    assert_equal(res.asList(),
+                 ['some_entry', 'akey',
+                  ['aname', 'about something'], ['another', 'something else']])
 
 
 def test_bibfile():
     txt = """@some_entry{akey, aname = "about something",
     another={something else}}"""
     res = bp.bibfile.parseString(txt)
-    assert_equal(res.asList(), ['about something'])
+    assert_equal(res.asList(),
+                 [['some_entry', 'akey',
+                   ['aname', 'about something'],
+                   ['another', 'something else']]])
 
 
 def test_bib1():
-    txt = """ @ARTICLE{Brett2002marsbar,
+    # First pass whole bib-like tests
+    txt = """
+Some introductory text
+(implicit comment)
+
+    @ARTICLE{Brett2002marsbar,
   author = {Matthew Brett and Jean-Luc Anton and Romain Valabregue and Jean-Baptise
 	Poline},
   title = {{Region of interest analysis using an SPM toolbox}},
@@ -158,15 +170,14 @@ def test_bib1():
   volume = {16},
   pages = {1140--1141},
   number = {2}
-}"""
+}
+
+@some_entry{akey, aname = "about something",
+another={something else}}
+"""
     res = bp.bibfile.parseString(txt)
-    res = list(bp.definitions.scanString(txt))
-    print res
-    comment_txt = """% a comment
-%another comment
-""" + txt
-    res = list(bp.definitions.scanString(comment_txt))
-    print res
-    txt = open(pjoin(BIB_PATH, 'bib1.bib'), 'rt').read()
-    res = list(bp.definitions.scanString(txt))
-    print res
+    assert_equal(len(res), 3)
+    res2 = bp.parse_str(txt)
+    assert_equal(res.asList(), res2.asList())
+    res3 = [r.asList()[0] for r, start, end in bp.definitions.scanString(txt)]
+    assert_equal(res.asList(), res3)

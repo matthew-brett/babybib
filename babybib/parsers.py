@@ -1,15 +1,16 @@
 """ Parser for BibTeX files
 
-A standalone parser using pyparsing.
+A standalone parser using pyparsing.  It's relatively slow compared to other
+parsers such as the simpleparse implementaiton in bibstuff_.
 
 To my knowledge there is no formal description of the syntax that BibTeX itself
-uses when interpreting a ``.bib`` file.
-
-This parser is the result of reading and experimentation with BibTeX.  The
-experiments used test BibTeX files.  The ones I used are in the
-``babybib/tests/bibs`` directory.  Reading included some extremely
-well-documented prior art, such as `Nelson Beeb's bibliography tools`_ and Greg
-Ward's btparse_.
+uses when interpreting a ``.bib`` file.  The parser here tries to do the same
+thing as BibTeX, roughly, rather than extend or formalize BibTeX grammar.  The
+behavior of the parser is the result of reading what other people have written
+or done, and experimentation with BibTeX.  The experiments used test BibTeX
+files that you may be able to fine in the ``babybib/tests/bibs`` directory.
+Reading included some extremely well-documented prior art, such as `Nelson
+Beeb's bibliography tools`_ and Greg Ward's btparse_.
 
 Nelson Beebe proposed a formal syntax for BibTeX files for his BibTex programs
 including bibparse.  His grammar is deliberately not quite the same as the rules
@@ -17,8 +18,9 @@ that BibTeX uses.
 
 Greg Ward also wrote a parser for BibTeX files, and wrote it up in detail, in
 the documentation for btparse and Text::BibTeX.  His grammar is like that of
-bibparse in that it enforces slightly tighter rules than BibTeX it
+bibparse in that it enforces slightly tighter rules than BibTeX does.
 
+.. _bibstuff: http://pricklysoft.org/software/bibstuff.html
 .. _Nelson Beebe's bibliography tools: http://www.math.utah.edu/~beebe/software/bibtex-bibliography-tools.html
 .. _btparse: http://search.cpan.org/dist/btparse
 
@@ -26,11 +28,8 @@ Matthew Brett 2010
 Simplified BSD license
 """
 
-import re
-
 from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward,
-                       SkipTo, lineStart, Word, nums, CaselessLiteral,
-                       restOfLine, Dict)
+                       SkipTo, Word, nums, CaselessLiteral, Dict)
 
 
 # Our character definitions
@@ -76,15 +75,9 @@ any_name = Regex('[^\s"#%\'(),={}]+')
 # either (see tests/bibs). Cite keys can start with a digit
 not_digname = Regex('[^\d\s"#%\'(),={}][^\s"#%\'(),={}]*')
 
-# where to go if there's an error during processing
-error_start = Suppress(SkipTo(lineStart + '@'))
-
-# Where to go when we've finished with the last entry
-normal_start = Suppress(SkipTo('@'))
-
 # Comment comments out to end of line
-comment = (AT + Suppress(CaselessLiteral('comment')) +
-           Regex("[\s{(].*").leaveWhitespace()).setResultsName('comment')
+comment = (AT + CaselessLiteral('comment') +
+           Regex("[\s{(].*").leaveWhitespace())
 
 # Id for macro def
 class Macro(object):
@@ -101,8 +94,9 @@ class Macro(object):
 macro_def = not_digname.copy()
 macro_ref = not_digname.copy().setParseAction(lambda s,l,t : Macro(t[0]))
 field_name = not_digname.copy()
-entry_type = not_digname.setResultsName('entry_type')
-cite_key = any_name.setResultsName('cite_key')
+# Spaces in names mean they cannot clash with field names
+entry_type = not_digname.setResultsName('entry type')
+cite_key = any_name.setResultsName('cite key')
 # Number has to be before macro name
 string = (number | macro_ref | quoted_string |
           curly_string)
@@ -117,24 +111,22 @@ entry = (AT + entry_type +
          bracketed(cite_key + COMMA + entry_contents))
 
 # Preamble is a macro-like thing with no name
-preamble = (AT + Suppress(CaselessLiteral('preamble')) +
-            bracketed(field_value)).setResultsName('preamble')
+preamble = AT + CaselessLiteral('preamble') + bracketed(field_value)
 
 # Macros (aka strings)
 macro_contents = macro_def + EQUALS + field_value
-macro = (AT + Suppress(CaselessLiteral('string')) +
-         bracketed(macro_contents)).setResultsName(
-             'string')
+macro = AT + CaselessLiteral('string') + bracketed(macro_contents)
 
-# Everything else is an implicit comment
-implicit_comment = Suppress(restOfLine)
+# Implicit comments
+icomment = SkipTo('@').setParseAction(lambda t : t.insert(0, 'icomment'))
 
 # entries are last in the list (other than the fallback) because they have
 # arbitrary start patterns that would match comments, preamble or macro
-definitions = (comment |
-               preamble |
-               macro |
-               entry )
+definitions = Group(comment |
+                    preamble |
+                    macro |
+                    entry |
+                    icomment)
 
 # Start symbol
 bibfile = ZeroOrMore(definitions)
