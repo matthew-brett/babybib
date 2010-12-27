@@ -11,8 +11,11 @@ tokens = (
     'NEWLINE',
     'EXPLICIT_COMMENT',
     'IMPLICIT_COMMENT',
+    'ENDSTUFF',
+    'ENTRY',
+    'PREAMBLE',
+    'MACRO',
     'CITEKEY',
-    'ENTRYTYPE',
     'COMMA',
     'BRACKET',
     'EQUALS',
@@ -33,34 +36,48 @@ states = (
 )
 
 
-t_NEWLINE = r"\n+"
-t_IMPLICIT_COMMENT = r'.*\S+.*'
-
+t_IMPLICIT_COMMENT = r'(.|\n)*?\n\s*(?=@)'
 t_EXPLICIT_COMMENT = r'\s*@comment([\s{(].*)?'
 
+_at_to_go = re.compile('\n\s*@')
+def t_INITIAL_error(t):
+    # Soak up any trailing lines
+    match = _at_to_go.search(t.value)
+    if match is None:
+        t.lexer.lexpos = len(t.lexer.lexdata)
+        t.type = 'IMPLICIT_COMMENT'
+        return t
 
-def t_error(t):
-    pass
+
+def t_entrydef_fielddef_quotestring_curlystring_error(t):
+    # bomb out to INITAL state
+    t.lexer.lexerstatestack = []
 
 
 _name_elements = '^\s"#%\'(),={}'
 _any_name = '[%s]+' % _name_elements
 _not_digname = '[%s\d][%s]*' % (_name_elements, _name_elements)
-_entry_type = "\s*@\s*(?P<entry_type>" + _not_digname + ")\s*[{(]"
+_entry_type = "[\s\n]*@\s*(?P<entry_type>" + _not_digname + ")\s*[{(]"
+
+_END_BRACKETS = {'{': '}', '(': ')'}
 
 @lex.TOKEN(_entry_type)
-def t_ENTRYTYPE(t):
+def t_ENTRY(t):
+    # Push expected end token so we can recognize it later
+    t.lexer.endtoken = _END_BRACKETS[t.value[-1]]
+    # Get entry type from match
     entry_type = t.lexer.lexmatch.group('entry_type').lower()
-    if entry_type in ('string', 'preamble'):
+    t.value = entry_type
+    # Set the type of entry
+    if entry_type == 'string':
+        t.type = 'MACRO'
         next_state = 'fielddef'
-    else:
+    elif entry_type == 'preamble':
+        t.type = 'PREAMBLE'
+        next_state = 'fielddef'
+    else: # entry
         next_state = 'entrydef'
     t.lexer.push_state(next_state)
-    if t.value.endswith('{'):
-        t.lexer.endtoken = '}'
-    else:
-        t.lexer.endtoken = ')'
-    t.value = entry_type
     return t
 
 
@@ -88,10 +105,13 @@ t_fielddef_NUMBER = r'[0-9]+'
 
 
 def t_fielddef_BRACKET(t):
-    r"[})]\s*"
-    # Leaving fielddef state
-    if t.value.strip() == t.lexer.endtoken:
+    r"[})]"
+    # Leaving fielddef state; discard matching bracket
+    if t.value == t.lexer.endtoken:
+        t.lexer.endtoken = None
         t.lexer.pop_state()
+        return
+    # Otherwise return it so we can raise a parse error
     return t
 
 
@@ -105,11 +125,6 @@ def t_fielddef_quotestring_curlystring_LCURLY(t):
     r'{'
     t.lexer.push_state('curlystring')
     return t
-
-
-def t_fielddef_error(t):
-    # bomb out to INITAL state
-    t.lexer.lexerstatestack = []
 
 
 def t_quotestring_STRING(t):
