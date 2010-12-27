@@ -1,7 +1,7 @@
 """ Testing ply parser for bibtex files
 """
 
-from ..plyer import lexer
+from ..btlex import lexer
 
 from nose.tools import assert_true, assert_equal, assert_raises
 
@@ -30,7 +30,6 @@ def test_comment():
     # End of file cruft
     assert_equal(str2ttv(' One line no entry'),
                  [('IMPLICIT_COMMENT', ' One line no entry')])
-
 
 
 def test_preamble():
