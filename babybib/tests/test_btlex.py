@@ -126,6 +126,7 @@ def test_entry():
                   ('ENTRY', 'some_entry'),
                   ('LBRACKET', '{'),
                   ('CITEKEY', 'Me2010'),
+                  ('COMMA', ','),
                   ('NAME', 'author'),
                   ('EQUALS', '='),
                   ('QUOTE', '"'),

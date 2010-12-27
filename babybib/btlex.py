@@ -135,6 +135,7 @@ def t_entrydef_COMMA(t):
     r','
     # Now we are ready to define the fields in an entry
     t.lexer.begin('fielddef')
+    return t
 
 
 # fielddef state; common to the body of entries, preambles and macro
