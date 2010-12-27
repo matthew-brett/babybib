@@ -1,25 +1,25 @@
 """ Draft of a ply bibtex parser
 """
+
+DEBUG = True
+
 import re
 
 from ply import lex, yacc
 
-from .parsers import Macro
-
 tokens = (
-    'AT',
-    'NEWLINE',
     'EXPLICIT_COMMENT',
     'IMPLICIT_COMMENT',
-    'ENDSTUFF',
+    'AT',
     'ENTRY',
     'PREAMBLE',
     'MACRO',
     'CITEKEY',
     'COMMA',
-    'BRACKET',
+    'LBRACKET',
+    'RBRACKET',
     'EQUALS',
-    'FIELDNAME',
+    'NAME',
     'LCURLY',
     'RCURLY',
     'QUOTE',
@@ -29,6 +29,7 @@ tokens = (
     )
 
 states = (
+    ('defdef', 'exclusive'),
     ('entrydef', 'exclusive'),
     ('fielddef', 'exclusive'),
     ('quotestring', 'exclusive'),
@@ -36,82 +37,123 @@ states = (
 )
 
 
+_NAME_ELEMENTS = '^\s"#%\'(),={}'
+_ANY_NAME = '[%s]+' % _NAME_ELEMENTS
+_NOT_DIGNAME = '[%s\d][%s]*' % (_NAME_ELEMENTS, _NAME_ELEMENTS)
+_END_BRACKETS = {'{': '}', '(': ')'}
+
+
+# Initial state.  Soak up stuff between <newline>@ as implicit comments.  Also
+# soak up any trailing not @ definition stuff at end of string, using the error
+# handling.  Soak up explicit comments - they have odd bracket handling
+
 t_IMPLICIT_COMMENT = r'(.|\n)*?\n\s*(?=@)'
-t_EXPLICIT_COMMENT = r'\s*@comment([\s{(].*)?'
+
 
 _at_to_go = re.compile('\n\s*@')
 def t_INITIAL_error(t):
     # Soak up any trailing lines
     match = _at_to_go.search(t.value)
     if match is None:
+        # Move lexpos to signal handling of error
         t.lexer.lexpos = len(t.lexer.lexdata)
         t.type = 'IMPLICIT_COMMENT'
         return t
 
 
-def t_entrydef_fielddef_quotestring_curlystring_error(t):
-    # bomb out to INITAL state
-    t.lexer.lexerstatestack = []
-
-
-_name_elements = '^\s"#%\'(),={}'
-_any_name = '[%s]+' % _name_elements
-_not_digname = '[%s\d][%s]*' % (_name_elements, _name_elements)
-_entry_type = "[\s\n]*@\s*(?P<entry_type>" + _not_digname + ")\s*[{(]"
-
-_END_BRACKETS = {'{': '}', '(': ')'}
-
-@lex.TOKEN(_entry_type)
-def t_ENTRY(t):
-    # Push expected end token so we can recognize it later
-    t.lexer.endtoken = _END_BRACKETS[t.value[-1]]
-    # Get entry type from match
-    entry_type = t.lexer.lexmatch.group('entry_type').lower()
-    t.value = entry_type
-    # Set the type of entry
-    if entry_type == 'string':
-        t.type = 'MACRO'
-        next_state = 'fielddef'
-    elif entry_type == 'preamble':
-        t.type = 'PREAMBLE'
-        next_state = 'fielddef'
-    else: # entry
-        next_state = 'entrydef'
-    t.lexer.push_state(next_state)
+def t_EXPLICIT_COMMENT(t):
+    r'\s*@comment([\s{(].*)?'
+    # Function so we handle these before reaching AT below
     return t
 
 
-t_entrydef_CITEKEY = _any_name
+def t_AT(t):
+    r'\s*@'
+    t.lexer.begin('defdef')
+    return t
+
+
+def to_initial_state(lexer):
+    """ utility routine to return lexer to INITIAL state
+
+    Clear any nested states or stateful cruft
+    """
+    lexer.entry_end = None
+    lexer.entry_type = None
+    lexer.lexerstatestack = []
+    lexer.begin('INITIAL')
+
+
+# defdef state is after @ and before we get to the content.  First we have to
+# get what type of definition this is.  We stay in this state until we get past
+# the LBRACKET
+
+@lex.TOKEN(_NOT_DIGNAME)
+def t_defdef_entrytype(t):
+    entry_type = t.value.upper()
+    if entry_type == 'STRING':
+        t.type = 'MACRO'
+    elif entry_type == 'PREAMBLE':
+        t.type = 'PREAMBLE'
+    else:
+        t.type = 'ENTRY'
+    t.lexer.entry_type = t.type
+    return t
+
+
+def t_defdef_entrydef_fielddef_quotestring_curlystring_error(t):
+    # bomb out to INITAL state on error from this point
+    to_initial_state(t.lexer)
+    # Move lexpos to signal we have handled the error
+    if not DEBUG:
+        t.lexer.skip(1)
+
+
+t_defdef_entrydef_fielddef_ignore = ' \t\n'
+
+
+def t_defdef_LBRACKET(t):
+    r'[{(]'
+    # Now we are starting the body of the definition.  If this is an entry, then
+    # we still need to collect the citekey and a comma.  Because the citekey can
+    # start with digits, unlike field or macro names, we need a separate state
+    # to collect those before we go field defining.
+
+    # We check for the closing bracket to get out of the fielddef state
+    t.lexer.entry_end = _END_BRACKETS[t.value]
+    if t.lexer.entry_type in ('MACRO', 'PREAMBLE'):
+        t.lexer.begin('fielddef')
+    else:
+        t.lexer.begin('entrydef')
+    return t
+
+
+t_entrydef_CITEKEY = _ANY_NAME
+
 
 def t_entrydef_COMMA(t):
     r','
-    t.lexer.pop_state()
-    t.lexer.push_state('fielddef')
+    # Now we are ready to define the fields in an entry
+    t.lexer.begin('fielddef')
 
 
-t_entrydef_fielddef_ignore = ' \t\n'
+# fielddef state; common to the body of entries, preambles and macro
+# definitions. We have to deal with quoted or curly brace strings, where the
+# curly brace strings can be nested inside other curly brace strings or in a
+# quoted string
 
-
-@lex.TOKEN(_not_digname)
-def t_fielddef_FIELDNAME(t):
-    t.value = t.value.lower()
-    return t
-
-
+t_fielddef_NAME = _NOT_DIGNAME # field name or macro name
 t_fielddef_COMMA = ','
 t_fielddef_EQUALS = '='
 t_fielddef_HASH = r"\#"
 t_fielddef_NUMBER = r'[0-9]+'
 
 
-def t_fielddef_BRACKET(t):
+def t_fielddef_RBRACKET(t):
     r"[})]"
-    # Leaving fielddef state; discard matching bracket
-    if t.value == t.lexer.endtoken:
-        t.lexer.endtoken = None
-        t.lexer.pop_state()
-        return
-    # Otherwise return it so we can raise a parse error
+    # maybe we are leaving fielddef state
+    if t.value == t.lexer.entry_end:
+        to_initial_state(t.lexer)
     return t
 
 
@@ -123,13 +165,15 @@ def t_fielddef_QUOTE(t):
 
 def t_fielddef_quotestring_curlystring_LCURLY(t):
     r'{'
+    # Deal with nested curly brace strings
     t.lexer.push_state('curlystring')
     return t
 
 
-def t_quotestring_STRING(t):
-    r'[^"{}]+'
-    return t
+# Quotestring state; may need to deal with nested curly string. Quotes cannot be
+# escaped within quoted strings, except by being within a nested curly string.
+
+t_quotestring_STRING = r'[^"{}]+'
 
 
 def t_quotestring_QUOTE(t):
@@ -139,14 +183,15 @@ def t_quotestring_QUOTE(t):
     return t
 
 
+# Curly string state; can have nested curly strings.  Dealt with by the LCURLY
+# shared definition function
+
+t_curlystring_STRING = r"[^{}]+"
+
+
 def t_curlystring_RCURLY(t):
     r'}'
     t.lexer.pop_state()
-    return t
-
-
-def t_curlystring_STRING(t):
-    r"[^{}]+"
     return t
 
 

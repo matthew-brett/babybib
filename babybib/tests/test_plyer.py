@@ -11,49 +11,74 @@ def str2ttv(str):
     return [(t.type, t.value) for t in lexer]
 
 
-def test_plyer_comment():
+def test_comment():
     str = 'hello @world\n more world \n\n @comment'
     assert_equal(str2ttv(str),
                  [('IMPLICIT_COMMENT', "hello @world\n more world \n\n "),
                   ('EXPLICIT_COMMENT', "@comment")])
     assert_equal(str2ttv(''),
                  [])
+    assert_equal(str2ttv('@comment some comments\n\n'),
+                 [('EXPLICIT_COMMENT', '@comment some comments'),
+                  ('IMPLICIT_COMMENT', '\n\n')])
+    assert_equal(str2ttv('@comment{some comments\n\n'),
+                 [('EXPLICIT_COMMENT', '@comment{some comments'),
+                  ('IMPLICIT_COMMENT', '\n\n')])
+    assert_equal(str2ttv('@comment(some comments\n\n'),
+                 [('EXPLICIT_COMMENT', '@comment(some comments'),
+                  ('IMPLICIT_COMMENT', '\n\n')])
+    # End of file cruft
     assert_equal(str2ttv(' One line no entry'),
                  [('IMPLICIT_COMMENT', ' One line no entry')])
 
 
 
-def test_plyer_preamble():
+def test_preamble():
     str = '@preamble({hello world {nested}})'
-    expected = [('PREAMBLE', 'preamble'),
-                ('LCURLY', '{'),
-                ('STRING', 'hello world '),
-                ('LCURLY', '{'),
-                ('STRING', 'nested'),
-                ('RCURLY', '}'),
-                ('RCURLY', '}')]
+    expected = [
+        ('AT', '@'),
+        ('PREAMBLE', 'preamble'),
+        ('LBRACKET', '('),
+        ('LCURLY', '{'),
+        ('STRING', 'hello world '),
+        ('LCURLY', '{'),
+        ('STRING', 'nested'),
+        ('RCURLY', '}'),
+        ('RCURLY', '}'),
+        ('RBRACKET', ')')]
     assert_equal(str2ttv(str), expected)
     # case insenstive match to preamble
-    assert_equal(str2ttv('@PREAmble({hello world {nested}})'),
-                 expected)
+    res = str2ttv('@PREAmble({hello world {nested}})')
+    assert_equal([tn for tn, tv in res],
+                 [tn for tn, tv in expected])
     assert_equal(str2ttv(str + ' \n ' + str + ' '),
-                 expected + expected + [('IMPLICIT_COMMENT', ' ')])
+                 (expected +
+                  [('AT', ' \n @')] + expected[1:] +
+                  [('IMPLICIT_COMMENT', ' ')]))
     assert_equal(str2ttv('@preamble("hello world")'),
-                 [('PREAMBLE', 'preamble'),
+                 [('AT', '@'),
+                  ('PREAMBLE', 'preamble'),
+                  ('LBRACKET', '('),
                   ('QUOTE', '"'),
                   ('STRING', 'hello world'),
-                  ('QUOTE', '"')])
+                  ('QUOTE', '"'),
+                  ('RBRACKET', ')')])
     assert_equal(str2ttv('@preamble("hello {nested } world")'),
-                 [('PREAMBLE', 'preamble'),
+                 [('AT', '@'),
+                  ('PREAMBLE', 'preamble'),
+                  ('LBRACKET', '('),
                   ('QUOTE', '"'),
                   ('STRING', 'hello '),
                   ('LCURLY', '{'),
                   ('STRING', 'nested '),
                   ('RCURLY', '}'),
                   ('STRING', ' world'),
-                  ('QUOTE', '"')])
+                  ('QUOTE', '"'),
+                  ('RBRACKET', ')')])
     assert_equal(str2ttv('@preamble("hello" # 19 # {world})'),
-                 [('PREAMBLE', 'preamble'),
+                 [('AT', '@'),
+                  ('PREAMBLE', 'preamble'),
+                  ('LBRACKET', '('),
                   ('QUOTE', '"'),
                   ('STRING', 'hello'),
                   ('QUOTE', '"'),
@@ -62,18 +87,22 @@ def test_plyer_preamble():
                   ('HASH', '#'),
                   ('LCURLY', '{'),
                   ('STRING', 'world'),
-                  ('RCURLY', '}')])
+                  ('RCURLY', '}'),
+                  ('RBRACKET', ')')])
 
 
 def test_macro():
     res = str2ttv('@string(aname = "some\nstring")\nA comment')
     assert_equal(res,
-                 [('MACRO', 'string'),
-                  ('FIELDNAME', 'aname'),
+                 [('AT', '@'),
+                  ('MACRO', 'string'),
+                  ('LBRACKET', '('),
+                  ('NAME', 'aname'),
                   ('EQUALS', '='),
                   ('QUOTE', '"'),
                   ('STRING', 'some\nstring'),
                   ('QUOTE', '"'),
+                  ('RBRACKET', ')'),
                   ('IMPLICIT_COMMENT', '\nA comment')])
     res = str2ttv('@string(aname = "some\nstring")\nA comment'
                   '@string(another = "a string")')
@@ -85,3 +114,28 @@ Distributed Computing Systems"}
 % ACM DL Proceedings: - note the name changes since DL 96. --kevin
 """
     res = str2ttv(str)
+
+
+def test_entry():
+    res = str2ttv(
+"""@some_entry{Me2010,
+        author="My Name",
+        title="A title"
+}""")
+    assert_equal(res,
+                 [('AT', '@'),
+                  ('ENTRY', 'some_entry'),
+                  ('LBRACKET', '{'),
+                  ('CITEKEY', 'Me2010'),
+                  ('NAME', 'author'),
+                  ('EQUALS', '='),
+                  ('QUOTE', '"'),
+                  ('STRING', 'My Name'),
+                  ('QUOTE', '"'),
+                  ('COMMA', ','),
+                  ('NAME', 'title'),
+                  ('EQUALS', '='),
+                  ('QUOTE', '"'),
+                  ('STRING', 'A title'),
+                  ('QUOTE', '"'),
+                  ('RBRACKET', '}')])
