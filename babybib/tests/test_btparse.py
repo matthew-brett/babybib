@@ -16,4 +16,7 @@ def test_comment():
     print parser.parse('@preamble{2013}')
     print macros, preamble
     print parser.parse('@entry{Me2014, author=1908,}')
+    print parser.parse('@entry{Me2014, author=1908,}\n@comment text')
     print parser.parse('@entry{Me2014, author=1908,title=1984}')
+    print parser.parse('@comment text\n@entry{Me2014, author=1900}')
+    print parser.parse('')
