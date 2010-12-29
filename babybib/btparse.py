@@ -10,40 +10,46 @@ macros = {}
 preamble = []
 
 def p_start(p):
-    " definitions : definitions entry"
-    key, value = p[2]
-    p[0] = p[1]
-    p[0][key] = value
-
-
-def p_definitions_from_entry(p):
-    """definitions : entry
-    """
-    # entries are citekey, fieldlist tuples
-    p[0] = dict((p[1],))
-
-
-def p_definitions_from_definitions_null(p):
-    """definitions : definitions macro
-                   | definitions preamble
-                   | definitions IMPLICIT_COMMENT
-                   | definitions EXPLICIT_COMMENT
-    """
-    p[0] = p[1]
-
-
-def p_definitions_from_nulls(p):
-    """definitions : macro
-                   | preamble
-                   | IMPLICIT_COMMENT
-                   | EXPLICIT_COMMENT
-                   | empty
+    """ definitions : throwout
+                    | empty
     """
     p[0] = {}
 
 
+def p_empty(p):
+    "empty :"
+    pass
+
+
+def p_start_entry(p):
+    """ definitions : entry
+    """
+    p[0] = dict((p[1],))
+
+
+def p_definitions_throwout(p):
+    " definitions : definitions throwout "
+    p[0] = p[1]
+
+
+def p_definitionss_entry(p):
+    " definitions : definitions entry "
+    p[0] = p[1]
+    key, value = p[2]
+    p[0][key] = value
+
+
+def p_firstdef_discard(p):
+    """ throwout : macro
+                 | preamble
+                 | IMPLICIT_COMMENT
+                 | EXPLICIT_COMMENT
+    """
+
 def p_entry(p):
-    "entry : AT ENTRY LBRACKET CITEKEY COMMA fieldlist optcomma RBRACKET"
+    """ entry : AT ENTRY LBRACKET CITEKEY COMMA fieldlist RBRACKET
+              | AT ENTRY LBRACKET CITEKEY COMMA fieldlist COMMA RBRACKET
+    """
     # entries are (citekey, dict) tuples
     # citekeys are case sensitive
     p[0] = (p[4], p[6])
@@ -58,17 +64,6 @@ def p_macro(p):
 def p_preamble(p):
     "preamble : AT PREAMBLE LBRACKET expression RBRACKET"
     preamble.append(p[4])
-
-
-def p_optcomma(p):
-    """ optcomma : COMMA
-                 | empty
-    """
-
-
-def p_empty(p):
-    "empty :"
-    pass
 
 
 def p_fieldlist_from_def(p):
@@ -97,17 +92,57 @@ def p_expr_name(p):
     if name in macros:
         p[0] = macros[name]
     else:
-        p[0] = Macro(name)
+        p[0] = [Macro(name)]
 
 
 def p_expr_number(p):
     """ expression : NUMBER """
+    p[0] = [p[1]]
+
+
+def p_expr_string(p):
+    """ expression : quotedstring
+                   | curlystring
+    """
     p[0] = p[1]
+
+
+def p_string_quoted(p):
+    " quotedstring : QUOTE stringcontents QUOTE "
+    p[0] = p[2]
+
+
+def p_string_curlied(p):
+    " curlystring : LCURLY stringcontents RCURLY "
+    p[0] = p[2]
+
+
+def p_scont_basic(p):
+    """ stringcontents : STRING
+                       | curlystring
+    """
+    p[0] = [p[1]]
+
+
+def p_scont_empty(p):
+    " stringcontents : empty "
+    p[0] = []
+
+
+def p_scont_appending(p):
+    """ stringcontents : stringcontents STRING
+                       | stringcontents curlystring
+    """
+    p[0] = p[1] + [p[2]]
 
 
 def p_expr_hash(p):
     """ expression : expression HASH expression """
     p[0] = p[1] + p[3]
+
+
+def p_error(p):
+    print "Syntax error at token", p.type, p.lineno
 
 
 parser = yacc()
