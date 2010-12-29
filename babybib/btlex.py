@@ -5,7 +5,7 @@ DEBUG = True
 
 import re
 
-from ply import lex, yacc
+from ply import lex
 
 tokens = (
     'EXPLICIT_COMMENT',

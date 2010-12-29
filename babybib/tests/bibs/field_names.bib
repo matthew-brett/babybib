@@ -1,4 +1,13 @@
 Check for characters allowed in field names
 Here the cite key is fine, but the field name is not allowed:
 ``You are missing a field name``
-@article{2010, 0author='Me'}
+@article{2010, 0author="Me"}
+
+Underscores allowed (no error)
+@article{2011, _author="Me"}
+
+Not so for spaces obviously (``repeated entry``)
+@article{2011, author name = "Myself"}
+
+Or hashes
+@article{2011, #name = "Myself"}

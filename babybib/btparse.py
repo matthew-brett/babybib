@@ -6,25 +6,31 @@ from .btlex import tokens, lexer
 from .parsers import Macro
 
 
-macros = {}
-preamble = []
-
 def p_start(p):
-    """ definitions : throwout
-                    | empty
+    """ definitions : initialize entry
+                    | initialize throwout
+                    | initialize empty
     """
+    # This rule executes once only at the beginning of parsing. The
+    # initialization has to be done with a action rule "initialize" because the
+    # initialization has to be done before processing of any entries or macros
     p[0] = {}
+    if not p[2] is None: # entry is tuple, others return None
+        key, value = p[2]
+        p[0][key] = value
+
+
+def p_initialize(p):
+    " initialize : "
+    # action rule to initialize parser
+    p.parser.defined_macros = {}
+    p.parser.undefined_macros = {}
+    p.parser.preamble = []
 
 
 def p_empty(p):
     "empty :"
     pass
-
-
-def p_start_entry(p):
-    """ definitions : entry
-    """
-    p[0] = dict((p[1],))
 
 
 def p_definitions_throwout(p):
@@ -39,7 +45,7 @@ def p_definitionss_entry(p):
     p[0][key] = value
 
 
-def p_firstdef_discard(p):
+def p_throwouts(p):
     """ throwout : macro
                  | preamble
                  | IMPLICIT_COMMENT
@@ -51,19 +57,23 @@ def p_entry(p):
               | AT ENTRY LBRACKET CITEKEY COMMA fieldlist COMMA RBRACKET
     """
     # entries are (citekey, dict) tuples
-    # citekeys are case sensitive
+    # entry types are in ENTRY, and are not case senstive. They go in the
+    # fieldlist dictionary as key 'entry type'.  The space in the key makes it
+    # an illegal bibtex field name, so it can't clash with bibtex fields.
+    # Citekeys are case sensitive
+    p[6]['entry type'] = p[2].lower()
     p[0] = (p[4], p[6])
 
 
 def p_macro(p):
     "macro : AT MACRO LBRACKET NAME EQUALS expression RBRACKET"
     name = p[4].lower()
-    macros[name] = p[6]
+    p.parser.defined_macros[name] = p[6]
 
 
 def p_preamble(p):
     "preamble : AT PREAMBLE LBRACKET expression RBRACKET"
-    preamble.append(p[4])
+    p.parser.preamble += p[4]
 
 
 def p_fieldlist_from_def(p):
@@ -89,10 +99,17 @@ def p_fielddef(p):
 def p_expr_name(p):
     " expression : NAME "
     name = p[1].lower()
-    if name in macros:
-        p[0] = macros[name]
+    d_macros = p.parser.defined_macros
+    if name in d_macros:
+        p[0] = d_macros[name]
+        return
+    # Placeholder and reference to undefined macros
+    p[0] = [Macro(name)]
+    ud_macros = p.parser.undefined_macros
+    if name not in ud_macros:
+        ud_macros[name] = [p[0]]
     else:
-        p[0] = [Macro(name)]
+        ud_macros[name].append(p[0])
 
 
 def p_expr_number(p):
