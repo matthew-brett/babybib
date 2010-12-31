@@ -1,9 +1,8 @@
 """ Parser for bibtex files """
-import sys
 
 import ply.yacc
 
-from .btlex import tokens, lexer
+from .btlex import tokens, make_lexer, reset_lexer
 from .parsers import Macro
 
 
@@ -33,9 +32,11 @@ class BibTeXEntries(object):
 class BibTeXParser(object):
     def __init__(self,
                  tabmodule='babybib.parsetab',
-                 lexer=lexer,
+                 lexer=None,
                  tokens=tokens):
         self.tabmodule = tabmodule
+        if lexer is None:
+            lexer = make_lexer()
         self.lexer = lexer
         self.tokens = tokens
         self.parser = ply.yacc.yacc(
@@ -43,6 +44,7 @@ class BibTeXParser(object):
             tabmodule=self.tabmodule)
 
     def parse(self, txt, debug=False):
+        reset_lexer(self.lexer)
         self._results = BibTeXEntries()
         self._results.entries = self.parser.parse(txt, lexer=self.lexer,
                                                   debug=debug)

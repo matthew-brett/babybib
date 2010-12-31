@@ -196,4 +196,15 @@ def t_curlystring_RCURLY(t):
     return t
 
 
-lexer = lex.lex(reflags=re.IGNORECASE)
+def make_lexer(*args, **kwargs):
+    if not 'reflags' in kwargs:
+        kwargs['reflags'] = re.IGNORECASE
+    return lex.lex(*args, **kwargs)
+
+
+def reset_lexer(lexer):
+    lexer.begin("INITIAL")
+    lexer.lexstatestack = []       # Stack of lexer states
+
+
+lexer = make_lexer()

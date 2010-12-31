@@ -1,8 +1,10 @@
 """ Testing btparse module
 """
 
+import re
+
 from ..btparse import BibTeXParser, BibTeXEntries as BTE, Macro
-from ..btlex import lexer
+from ..btlex import lexer, make_lexer
 
 from nose.tools import assert_true, assert_equal, assert_raises
 
@@ -32,9 +34,11 @@ def test_preamble_macro():
 
 
 def test_lexer_reset():
+    # With a trailing bad bracket, the lexer used to get out of sync
     res = parser.parse("@preamble(a_macro}")
-    # This generates a syntax error because of the bad } above.
+    # This generated a syntax error because of the bad } above.
     res = parser.parse('@an_entry{Me2014, author="Myself"}')
+    assert_equal(len(res.entries), 1)
 
 
 def test_entries():
