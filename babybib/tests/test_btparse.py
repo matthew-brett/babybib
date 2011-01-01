@@ -1,10 +1,7 @@
 """ Testing btparse module
 """
 
-import re
-
 from ..btparse import BibTeXParser, BibTeXEntries as BTE, Macro
-from ..btlex import lexer, make_lexer
 
 from nose.tools import assert_true, assert_equal, assert_raises
 
@@ -31,6 +28,38 @@ def test_preamble_macro():
     assert_equal(res,
                  BTE(undefined_macros=dict(a_macro=[[exp_macro]]),
                      preamble=[exp_macro]))
+
+
+def test_preamble_error():
+    res = parser.parse("""@preamble(two words)
+                       @entry(Me2012, author="Me")
+                       """)
+    assert_equal(res, BTE({'Me2012': {'author': ['Me'],
+                                      'entry type': 'entry'}}))
+
+
+def test_macro_error():
+    res = parser.parse("""@string(two words)
+                       @entry(Me2012, author="Me")
+                       """)
+    assert_equal(res, BTE({'Me2012': {'author': ['Me'],
+                                      'entry type': 'entry'}}))
+
+
+def test_entry_error():
+    res = parser.parse("""@some_entry(two words)
+                       @entry(Me2012, author="Me")
+                       """)
+    assert_equal(res, BTE({'Me2012': {'author': ['Me'],
+                                      'entry type': 'entry'}}))
+    res = parser.parse("""@some_entry(akey, words)
+                       @entry(Me2012, author="Me")
+                       """)
+    assert_equal(res, BTE({'Me2012': {'author': ['Me'], 'entry type': 'entry'},
+                           'akey': {'entry type': 'some_entry'}}))
+    res = parser.parse('@entry(key, author="Me", bad text)')
+    assert_equal(res,
+                 BTE({'key': {'author': ['Me'], 'entry type': 'entry'}}))
 
 
 def test_lexer_reset():

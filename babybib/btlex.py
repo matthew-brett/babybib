@@ -104,9 +104,10 @@ def t_defdef_entrytype(t):
 def t_defdef_entrydef_fielddef_quotestring_curlystring_error(t):
     # bomb out to INITAL state on error from this point
     to_initial_state(t.lexer)
+    print("Illegal character '%s' at pos %d" %
+          (t.value[0], t.lexer.lexpos))
     # Move lexpos to signal we have handled the error
-    if not DEBUG:
-        t.lexer.skip(1)
+    t.lexer.skip(1)
 
 
 t_defdef_entrydef_fielddef_ignore = ' \t\n'

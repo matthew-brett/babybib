@@ -1,14 +1,17 @@
 """ Testing ply parser for bibtex files
 """
 
-from ..btlex import lexer
+from ..btlex import lexer, make_lexer
 
 from nose.tools import assert_true, assert_equal, assert_raises
 
 
-def str2ttv(str):
+def str2ttv(str, lexer=lexer):
     lexer.input(str)
-    return [(t.type, t.value) for t in lexer]
+    out = []
+    for t in lexer:
+        out.append((t.type, t.value))
+    return out
 
 
 def test_comment():
@@ -139,3 +142,14 @@ def test_entry():
                   ('STRING', 'A title'),
                   ('QUOTE', '"'),
                   ('RBRACKET', '}')])
+
+
+def test_entry_resync():
+    # used to create scanning error before resync')'
+    res = str2ttv("@entry(two words)")
+    assert_equal(res,
+                 [('AT', '@'),
+                  ('ENTRY', 'entry'),
+                  ('LBRACKET', '('),
+                  ('CITEKEY', 'two'),
+                  ('CITEKEY', 'words')])

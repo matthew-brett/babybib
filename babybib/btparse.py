@@ -1,9 +1,16 @@
 """ Parser for bibtex files """
 
+DEBUG = False
+
+from os.path import dirname, join as pjoin
+import sys
+
 import ply.yacc
 
 from .btlex import tokens, make_lexer, reset_lexer
 from .parsers import Macro
+
+_MYPATH=dirname(__file__)
 
 
 class BibTeXEntries(object):
@@ -31,17 +38,23 @@ class BibTeXEntries(object):
 
 class BibTeXParser(object):
     def __init__(self,
-                 tabmodule='babybib.parsetab',
                  lexer=None,
-                 tokens=tokens):
-        self.tabmodule = tabmodule
+                 tokens=tokens,
+                 debug=DEBUG,
+                 picklefile=None,
+                 **kwargs):
         if lexer is None:
             lexer = make_lexer()
+        if not debug and picklefile is None:
+            picklefile = pjoin(_MYPATH, 'btparse.pkl')
         self.lexer = lexer
         self.tokens = tokens
+        self.debug = debug
         self.parser = ply.yacc.yacc(
+            debug=DEBUG,
             module=self,
-            tabmodule=self.tabmodule)
+            picklefile=picklefile,
+            **kwargs)
 
     def parse(self, txt, debug=False):
         reset_lexer(self.lexer)
@@ -49,6 +62,10 @@ class BibTeXParser(object):
         self._results.entries = self.parser.parse(txt, lexer=self.lexer,
                                                   debug=debug)
         return self._results
+
+    def warn(self, msg):
+        """ Emit warning `msg` """
+        sys.stderr.write(msg + '\n')
 
     def p_start(self, p):
         """ definitions : entry
@@ -92,14 +109,32 @@ class BibTeXParser(object):
         p[6]['entry type'] = p[2].lower()
         p[0] = (p[4], p[6])
 
+    def p_entry_error(self, p):
+        " throwout : AT ENTRY error "
+        # Entry is unrecoverable
+        self.warn("Syntax error in entry; discarding")
+
+    def p_entry_citekey_error(self, p):
+        " entry : AT ENTRY LBRACKET CITEKEY COMMA error "
+        # Empty entry up to citekey
+        p[0] = (p[4], {'entry type': p[2].lower()})
+
     def p_macro(self, p):
         "macro : AT MACRO LBRACKET NAME EQUALS expression RBRACKET"
         name = p[4].lower()
         self._results.defined_macros[name] = p[6]
 
+    def p_macro_error(self, p):
+        "macro : AT MACRO error"
+        self.warn("Syntax error in macro; discarding")
+
     def p_preamble(self, p):
         "preamble : AT PREAMBLE LBRACKET expression RBRACKET"
         self._results.preamble += p[4]
+
+    def p_preamble_error(self, p):
+        "preamble : AT PREAMBLE error"
+        self.warn("Syntax error in preamble; discarding")
 
     def p_fieldlist_from_def(self, p):
         """ fieldlist : fielddef """
@@ -113,6 +148,12 @@ class BibTeXParser(object):
         key, value = p[3]
         p[0] = p[1]
         p[0][key] = value
+
+    def p_fieldlist_from_list_error(self, p):
+        " fieldlist : fieldlist error "
+        self.warn("Syntax error in field list; discarding remainder")
+        # Try and keep fieldlist up til now
+        p[0] = p[1]
 
     def p_fielddef(self, p):
         """ fielddef : NAME EQUALS expression"""
@@ -173,5 +214,5 @@ class BibTeXParser(object):
         p[0] = p[1] + p[3]
 
     def p_error(self, t):
-        print "Syntax error at token %s, value %s, line no %d" % (
-            t.type, t.value, t.lineno)
+        self.warn("Syntax error at token %s, value %s, line no %d"
+                  % (t.type, t.value, t.lineno))
