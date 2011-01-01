@@ -89,6 +89,8 @@ class BibTeXParser(object):
         " definitions : definitions entry "
         p[0] = p[1]
         key, value = p[2]
+        if key in p[0]:
+            self.warn('Duplicate key "%s"; replacing' % key)
         p[0][key] = value
 
     def p_throwouts(self, p):
@@ -110,7 +112,7 @@ class BibTeXParser(object):
         p[0] = (p[4], p[6])
 
     def p_entry_error(self, p):
-        " throwout : AT ENTRY error "
+        " throwout : AT error "
         # Entry is unrecoverable
         self.warn("Syntax error in entry; discarding")
 

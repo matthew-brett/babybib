@@ -6,8 +6,8 @@ Here the cite key is fine, but the field name is not allowed:
 Underscores allowed (no error)
 @article{2011, _author="Me"}
 
-Not so for spaces obviously (``repeated entry``)
-@article{2011, author name = "Myself"}
+Not so for spaces obviously (``expecting an '='``)
+@article{2012, author name = "Myself"}
 
-Or hashes
-@article{2011, #name = "Myself"}
+Or hashes (``missing a field name``)
+@article{2013, #name = "Myself"}

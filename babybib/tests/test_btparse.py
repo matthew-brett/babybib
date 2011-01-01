@@ -60,6 +60,10 @@ def test_entry_error():
     res = parser.parse('@entry(key, author="Me", bad text)')
     assert_equal(res,
                  BTE({'key': {'author': ['Me'], 'entry type': 'entry'}}))
+    # later bad something does not wipe out earlier good
+    res = parser.parse('@entry(key,author="Me")\n@2thou(something)')
+    assert_equal(res,
+                 BTE({'key': {'author': ['Me'], 'entry type': 'entry'}}))
 
 
 def test_lexer_reset():
