@@ -1,14 +1,32 @@
 """ Parser for bibtex files """
 
-DEBUG = False
+DEBUG = True
+if DEBUG:
+    from IPython.Shell import IPShellEmbed
+    ipshell = IPShellEmbed([])
 
 from os.path import dirname, join as pjoin
 import sys
 
+import ply.lex
 import ply.yacc
+
+# We are doing our own error recovery, and so don't allow post error tokens
+# without further p_error calls.  This is a module global
+ply.yacc.error_count = 1
 
 from .btlex import tokens, make_lexer, reset_lexer
 from .parsers import Macro
+
+def make_error(t):
+    tok = ply.lex.LexToken()
+    tok.type = 'ERRORMARKER'
+    tok.value = 'error marker'
+    tok.lineno = t.lineno
+    tok.lexpos = t.lexpos
+    return tok
+
+tokens += ('ERRORMARKER',)
 
 _MYPATH=dirname(__file__)
 
@@ -48,6 +66,7 @@ class BibTeXParser(object):
         if not debug and picklefile is None:
             picklefile = pjoin(_MYPATH, 'btparse.pkl')
         self.lexer = lexer
+        self._stack = []
         self.tokens = tokens
         self.debug = debug
         self.parser = ply.yacc.yacc(
@@ -59,13 +78,21 @@ class BibTeXParser(object):
     def parse(self, txt, debug=False):
         reset_lexer(self.lexer)
         self._results = BibTeXEntries()
-        self._results.entries = self.parser.parse(txt, lexer=self.lexer,
+        self._results.entries = self.parser.parse(txt,
+                                                  lexer=self.lexer,
+                                                  tokenfunc = self.get_token,
                                                   debug=debug)
         return self._results
 
     def warn(self, msg):
         """ Emit warning `msg` """
         sys.stderr.write(msg + '\n')
+
+    def get_token(self):
+        stack = self._stack
+        if len(stack):
+            return stack.pop()
+        return self.lexer.token()
 
     def p_start(self, p):
         """ definitions : entry
@@ -103,6 +130,7 @@ class BibTeXParser(object):
     def p_entry(self, p):
         """ entry : AT ENTRY LBRACKET CITEKEY COMMA fieldlist RBRACKET
                 | AT ENTRY LBRACKET CITEKEY COMMA fieldlist COMMA RBRACKET
+                | AT ENTRY LBRACKET CITEKEY COMMA fieldlisterr
         """
         # entries are (citekey, dict) tuples.  Entry types are in ENTRY, and are not
         # case senstive. They go in the fieldlist dictionary as key 'entry type'.
@@ -112,14 +140,9 @@ class BibTeXParser(object):
         p[0] = (p[4], p[6])
 
     def p_entry_error(self, p):
-        " throwout : AT error "
+        " throwout : AT error ERRORMARKER "
         # Entry is unrecoverable
         self.warn("Syntax error in entry; discarding")
-
-    def p_entry_citekey_error(self, p):
-        " entry : AT ENTRY LBRACKET CITEKEY COMMA error "
-        # Empty entry up to citekey
-        p[0] = (p[4], {'entry type': p[2].lower()})
 
     def p_macro(self, p):
         "macro : AT MACRO LBRACKET NAME EQUALS expression RBRACKET"
@@ -127,7 +150,7 @@ class BibTeXParser(object):
         self._results.defined_macros[name] = p[6]
 
     def p_macro_error(self, p):
-        "macro : AT MACRO error"
+        "macro : AT MACRO error ERRORMARKER"
         self.warn("Syntax error in macro; discarding")
 
     def p_preamble(self, p):
@@ -135,13 +158,18 @@ class BibTeXParser(object):
         self._results.preamble += p[4]
 
     def p_preamble_error(self, p):
-        "preamble : AT PREAMBLE error"
+        "preamble : AT PREAMBLE error ERRORMARKER"
         self.warn("Syntax error in preamble; discarding")
 
     def p_fieldlist_from_def(self, p):
         """ fieldlist : fielddef """
         # fieldef is a tuple
         p[0] = dict((p[1],))
+
+    def p_fieldlisterr_from_def(self, p):
+        """ fieldlisterr : error ERRORMARKER """
+        self.warn("Error in field definition, discarding")
+        p[0] = {}
 
     def p_fieldlist_from_list_def(self, p):
         """ fieldlist : fieldlist COMMA fielddef
@@ -151,8 +179,10 @@ class BibTeXParser(object):
         p[0] = p[1]
         p[0][key] = value
 
-    def p_fieldlist_from_list_error(self, p):
-        " fieldlist : fieldlist error "
+    def p_fieldlisterr_from_list_error(self, p):
+        """ fieldlisterr : fieldlist error ERRORMARKER
+        """
+        # Signals error to entry
         self.warn("Syntax error in field list; discarding remainder")
         # Try and keep fieldlist up til now
         p[0] = p[1]
@@ -218,3 +248,11 @@ class BibTeXParser(object):
     def p_error(self, t):
         self.warn("Syntax error at token %s, value %s, line no %d"
                   % (t.type, t.value, t.lineno))
+        # Read ahead to next AT, and put back on the stack
+        while 1:
+            tok = self.get_token()             # Get the next token
+            if not tok or tok.type == 'AT': break
+        if tok:
+            self._stack.append(tok)
+        # Put an error marker on the stack to resynchronize
+        self._stack.append(make_error(t))

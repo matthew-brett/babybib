@@ -64,6 +64,12 @@ def test_entry_error():
     res = parser.parse('@entry(key,author="Me")\n@2thou(something)')
     assert_equal(res,
                  BTE({'key': {'author': ['Me'], 'entry type': 'entry'}}))
+    # Early errors in entry definition - only citekey valid
+    res = parser.parse('@entry(key,))')
+    assert_equal(res, BTE({'key': {'entry type': 'entry'}}))
+    # Entries survive later invalid entries
+    res = parser.parse('@entry(key,) @2thou(key2,)')
+    assert_equal(res, BTE({'key': {'entry type': 'entry'}}))
 
 
 def test_lexer_reset():

@@ -75,14 +75,15 @@ _exp_res = {
                                    'entry type': 'article',
                                    'author': ['Nom de Plume, My']},
                        }),
-    'inline_comment': BTE({'Me2010': {'entry type': 'article'},
-                           'Me2011': {'entry type': 'article'},
+    'inline_comment': BTE({'Me2010': {'entry type': 'article',
+                                      'author': ['Brett, Matthew']},
+                           'Me2011': {'entry type': 'article',
+                                      'author': ['Brett-like, Matthew']},
                            'Me2012': {'entry type': 'article'},
                            'Me2013': {'entry type': 'article',
                                       'author': ['Nom de Plume, My'],
                                       'title': ['A short story']},
                           }),
-    # The test above fails; clearly I don't understand the error mechanism yet
     }
 
 

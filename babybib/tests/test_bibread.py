@@ -20,6 +20,7 @@ def test_bib1():
     assert_equal(sorted(entry.keys()), ['author',
                                         'cite key',
                                         'entry type',
+                                        'institution',
                                         'journal',
                                         'number',
                                         'pages',
