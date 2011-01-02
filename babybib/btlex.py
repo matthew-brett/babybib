@@ -40,7 +40,6 @@ states = (
 _NAME_ELEMENTS = '^\s"#%\'(),={}'
 _ANY_NAME = '[%s]+' % _NAME_ELEMENTS
 _NOT_DIGNAME = '[%s\d][%s]*' % (_NAME_ELEMENTS, _NAME_ELEMENTS)
-_NOT_PPM_DIGNAME = '[%s\d+-.][%s]*' % (_NAME_ELEMENTS, _NAME_ELEMENTS)
 _END_BRACKETS = {'{': '}', '(': ')'}
 
 

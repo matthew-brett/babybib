@@ -43,15 +43,14 @@ Redefining e.g jan leads to it being substituted in export
 String names cannot start with a number (you are missing a string name error)
 @string{2thou='two thousand"}
 
-Nor with a period
-@string{.thou='two thousand"}
-
-Nor with a + or -
-@string{+thou='two thousand"}
-@string{-thou='two thousand"}
+But they can begin with +-.
+@string{.thou="one thousand"}
+@string{+thou="two thousand"}
+@string{-thou="two thousand"}
 
 They can contain numbers
 @string{t2="two thousand"}
 
-Test article to show the effect of lhs rhs string and t2
-@article{Me2010, author=another_name, title=t2, year=yet_another}
+Test article to show the effect of lhs rhs string and t2 and .thou
+@article{Me2010, author=another_name, title=t2, year=yet_another,
+    number=.thou}
