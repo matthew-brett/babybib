@@ -1,6 +1,10 @@
 .. shared links for documentation
     vim: ft=rst
 
+.. _ply: http://www.dabeaz.com/ply
+.. _pyparsing: http://pyparsing.wikispaces.com
+.. _simpleparse: http://simpleparse.sourceforge.net
+
 .. _bt00l: http://www.gerg.ca/software/btOOL
 .. _btparse: http://search.cpan.org/dist/btparse
 .. _Text-BibTeX: http://search.cpan.org/dist/Text-BibTeX

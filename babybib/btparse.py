@@ -16,9 +16,22 @@ import ply.yacc
 ply.yacc.error_count = 1
 
 from .btlex import tokens, make_lexer, reset_lexer
-from .parsers import Macro
+
+
+class Macro(object):
+    """ Class to encapsulate undefined macro references """
+    def __init__(self, name):
+        self.name = name
+    def __repr__(self):
+        return 'Macro("%s")' % self.name
+    def __eq__(self, other):
+        return self.name == other.name
+    def __ne__(self, other):
+        return self.name != other.name
+
 
 def make_error(t):
+    """ Create error marker token to signal read error to parser """
     tok = ply.lex.LexToken()
     tok.type = 'ERRORMARKER'
     tok.value = 'error marker'
@@ -256,3 +269,8 @@ class BibTeXParser(object):
             self._stack.append(tok)
         # Put an error marker on the stack to resynchronize
         self._stack.append(make_error(t))
+
+
+# Top level convenience object and function
+parser = BibTeXParser()
+parse = parser.parse

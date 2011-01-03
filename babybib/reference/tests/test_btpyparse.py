@@ -3,8 +3,8 @@
 from os.path import join as pjoin, dirname
 
 from pyparsing import ParseException
-from .. import parsers as bp
-from ..parsers import Macro
+from ..btpyparse import Macro
+from .. import btpyparse as bp
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 

@@ -1,28 +1,7 @@
-""" Parser for BibTeX files
+""" Pyparsing parser for BibTeX files
 
 A standalone parser using pyparsing.  It's relatively slow compared to other
-parsers such as the simpleparse implementaiton in bibstuff_.
-
-To my knowledge there is no formal description of the syntax that BibTeX itself
-uses when interpreting a ``.bib`` file.  The parser here tries to do the same
-thing as BibTeX, roughly, rather than extend or formalize BibTeX grammar.  The
-behavior of the parser is the result of reading what other people have written
-or done, and experiments with BibTeX.  The small BibTeX test files should be in
-the ``babybib/tests/bibs`` directory.  Reading included some extremely
-well-documented prior art, such as `Nelson Beeb's bibliography tools`_ and Greg
-Ward's btparse_.
-
-Nelson Beebe proposed a formal syntax for BibTeX files for his BibTex programs
-including bibparse.  His grammar is deliberately not quite the same as the rules
-that BibTeX uses.
-
-Greg Ward also wrote a parser for BibTeX files, and wrote it up in detail, in
-the documentation for btparse and Text::BibTeX.  His grammar is like that of
-bibparse in that it enforces slightly tighter rules than BibTeX does.
-
-.. _bibstuff: http://pricklysoft.org/software/bibstuff.html
-.. _Nelson Beebe's bibliography tools: http://www.math.utah.edu/~beebe/software/bibtex-bibliography-tools.html
-.. _btparse: http://search.cpan.org/dist/btparse
+parsers such as the simpleparse implementation in bibstuff_.
 
 Matthew Brett 2010
 Simplified BSD license
@@ -31,6 +10,8 @@ Simplified BSD license
 from pyparsing import (Regex, Suppress, ZeroOrMore, Group, Optional, Forward,
                        SkipTo, CaselessLiteral, Dict)
 
+
+from ..btparse import Macro
 
 # Character literals
 LCURLY = Suppress('{')
@@ -78,17 +59,6 @@ not_digname = Regex('[^\d\s"#%\'(),={}][^\s"#%\'(),={}]*')
 # Comment comments out to end of line
 comment = (AT + CaselessLiteral('comment') +
            Regex("[\s{(].*").leaveWhitespace())
-
-# Id for macro def
-class Macro(object):
-    def __init__(self, name):
-        self.name = name
-    def __repr__(self):
-        return 'Macro("%s")' % self.name
-    def __eq__(self, other):
-        return self.name == other.name
-    def __ne__(self, other):
-        return self.name != other.name
 
 # The name types with their digiteyness
 not_dig_lower = not_digname.copy().setParseAction(

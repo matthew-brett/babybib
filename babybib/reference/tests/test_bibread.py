@@ -1,14 +1,14 @@
-""" Testing bib reading
+""" Testing bib reading using reference parser
 """
 
 from os.path import abspath, dirname, join as pjoin, split as psplit
 
-from .. import parsers as bp
+from .. import btpyparse as bp
 
 from nose.tools import assert_true, assert_equal, assert_raises
 
 _mypath = dirname(__file__)
-BIB_PATH = pjoin(_mypath, 'bibs')
+BIB_PATH = abspath(pjoin(_mypath, '..', '..', 'tests', 'bibs'))
 
 
 def test_bib1():
