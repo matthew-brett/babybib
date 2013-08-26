@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+""" Crude conversion from bibtext to RST
+
+Accepts bibtex input on stdin, puts RST output to stdout
+
+Example::
+
+    cat my.bib | bib2rst
+"""
+from __future__ import print_function
+
+import sys
+from babybib import parse
+
+
+def entry2rst(entry):
+    """ Very crude RST outputter
+    """
+    f = ', '.join(entry['author'])
+    f += ' ({0})'.format(entry['year'][0])
+    f += ' {0}.'.format(entry['title'][0])
+    f += ' *{0}*; '.format(entry['journal'][0])
+    f += ' {0}:'.format(entry['volume'][0])
+    f += '{0}'.format(entry['pages'][0])
+    return f
+
+
+def main():
+    txt = sys.stdin.read()
+    parsed = parse(txt)
+    for key, entry in parsed.entries.items():
+        print(entry2rst(entry))
+
+
+if __name__ == '__main__':
+    main()
