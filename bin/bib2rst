@@ -16,12 +16,18 @@ from babybib import parse
 def entry2rst(entry):
     """ Very crude RST outputter
     """
-    f = ', '.join(entry['author'])
-    f += ' ({0})'.format(entry['year'][0])
-    f += ' {0}.'.format(entry['title'][0])
-    f += ' *{0}*; '.format(entry['journal'][0])
-    f += ' {0}:'.format(entry['volume'][0])
-    f += '{0}'.format(entry['pages'][0])
+    if 'author' in entry:
+        f = ', '.join(entry['author'])
+    if 'year' in entry:
+        f += ' ({0})'.format(entry['year'][0])
+    if 'title' in entry:
+        f += ' {0}.'.format(entry['title'][0])
+    if 'journal' in entry:
+        f += ' *{0}*; '.format(entry['journal'][0])
+    if 'volume' in entry:
+        f += ' {0}:'.format(entry['volume'][0])
+    if 'pages' in entry:
+        f += '{0}'.format(entry['pages'][0])
     return f
 
 
