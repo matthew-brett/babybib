@@ -1,19 +1,16 @@
 """ Parser for bibtex files """
 
-DEBUG = True
-if DEBUG:
-    from IPython.Shell import IPShellEmbed
-    ipshell = IPShellEmbed([])
+DEBUG = False
 
 from os.path import dirname, join as pjoin
 import sys
 
-import ply.lex
-import ply.yacc
+from .ply import lex
+from .ply import yacc
 
 # We are doing our own error recovery, and so don't allow post error tokens
 # without further p_error calls.  This is a module global
-ply.yacc.error_count = 1
+yacc.error_count = 1
 
 from .btlex import tokens, make_lexer, reset_lexer
 
@@ -32,7 +29,7 @@ class Macro(object):
 
 def make_error(t):
     """ Create error marker token to signal read error to parser """
-    tok = ply.lex.LexToken()
+    tok = lex.LexToken()
     tok.type = 'ERRORMARKER'
     tok.value = 'error marker'
     tok.lineno = t.lineno
@@ -82,7 +79,7 @@ class BibTeXParser(object):
         self._stack = []
         self.tokens = tokens
         self.debug = debug
-        self.parser = ply.yacc.yacc(
+        self.parser = yacc.yacc(
             debug=DEBUG,
             module=self,
             picklefile=picklefile,
